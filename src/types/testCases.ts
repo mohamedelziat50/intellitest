@@ -6,6 +6,7 @@ export type TestCaseRow = {
 	steps: string;
 	expectedResult: string;
 	priority: string;
+	comments?: string;
 };
 
 export type GeneratedTestCases = {

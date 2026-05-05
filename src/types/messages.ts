@@ -10,6 +10,9 @@ export type WebviewMessage =
 			command: 'ready';
 	  }
 	| {
+			command: 'refreshCodeInsights';
+	  }
+	| {
 			command: 'copyTestScript';
 			code: string;
 	  }

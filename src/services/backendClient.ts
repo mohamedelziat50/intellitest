@@ -1,15 +1,61 @@
+/**
+ * BackendClient — all HTTP calls from the extension to the IntelliTest backend.
+ *
+ * New stateful API (v2):
+ *   generateViaBackendV2()  → POST /generate   (context-aware, persisted)
+ *   loadProjectSession()    → GET  /project/:projectId/init
+ *
+ * Legacy API (v1 — kept for backward compat):
+ *   generateViaBackend()    → POST /generate-testcases + /generate-tests
+ */
+
 import axios from 'axios';
 import type { IntelliGenerationResult, TestCaseRow } from '../types/testCases.js';
 import { buildProjectMap } from './projectMap.js';
 
+// ── types ─────────────────────────────────────────────────────────────────────
+
 type ServerTestCase = {
 	id?: string;
 	name?: string;
+	description?: string;
+	preconditions?: unknown;
 	steps?: unknown;
 	expected?: string;
 	priority?: string;
 	tags?: unknown;
 };
+
+export type ProjectSession = {
+	projectId: string;
+	messages: Array<{
+		_id: string;
+		prompt: string;
+		response: string;
+		rating: number;
+		createdAt: string;
+	}>;
+	context: {
+		modules: string[];
+		routes: string[];
+		priorityFiles: string[];
+		contextVersion: number;
+		updatedAt: string;
+	} | null;
+	features: Array<{
+		name: string;
+		description: string;
+		testScore: number;
+		metrics: {
+			totalTests: number;
+			passedTests: number;
+			failedTests: number;
+			coverage: number;
+		};
+	}>;
+};
+
+// ── shared helpers ─────────────────────────────────────────────────────────────
 
 function stepsToDisplayText(steps: unknown): string {
 	if (Array.isArray(steps)) {
@@ -22,14 +68,24 @@ function stepsToDisplayText(steps: unknown): string {
 	return String(steps ?? '').trim();
 }
 
+function toPreconditionsText(value: unknown): string {
+	if (Array.isArray(value)) {
+		return value.map(v => String(v ?? '').trim()).filter(Boolean).join('; ');
+	}
+	return String(value ?? '').trim();
+}
+
 function mapServerCase(item: ServerTestCase, index: number): TestCaseRow {
 	const tags = Array.isArray(item.tags) ? item.tags.map(String).filter(Boolean) : [];
-	const tagLine = tags.length ? `Tags: ${tags.join(', ')}` : '';
+	const descriptionText = String(item.description ?? '').trim();
+	const preconditionsText = toPreconditionsText(item.preconditions);
+	const fallbackTagLine = tags.length ? `Tags: ${tags.join(', ')}` : '';
+
 	return {
 		testCaseId: String(item.id ?? `TC-${String(index + 1).padStart(3, '0')}`),
 		title: String(item.name ?? 'Unnamed test'),
-		description: tagLine,
-		preconditions: '',
+		description: descriptionText || fallbackTagLine,
+		preconditions: preconditionsText,
 		steps: stepsToDisplayText(item.steps),
 		expectedResult: String(item.expected ?? ''),
 		priority: String(item.priority ?? 'medium')
@@ -64,7 +120,7 @@ function throwAxiosDetail(err: unknown): never {
 	if (axios.isAxiosError(err)) {
 		if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
 			throw new Error(
-				'Cannot reach the IntelliTest backend. Start the server (cd Server && npm start) and set Settings → intellitest.backendUrl to the same host and port as Server/.env PORT (e.g. http://localhost:3001 if PORT=3001).'
+				'Cannot reach the IntelliTest backend. Start the server (cd Server && npm start) and set Settings → intellitest.backendUrl to the correct URL.'
 			);
 		}
 		const fromBody = err.response?.data != null ? messageFromResponseData(err.response.data) : undefined;
@@ -74,8 +130,86 @@ function throwAxiosDetail(err: unknown): never {
 	throw err instanceof Error ? err : new Error(String(err));
 }
 
+// ── v2: stateful API ──────────────────────────────────────────────────────────
+
+/**
+ * POST /generate — stateful, context-aware test generation.
+ * Requires a stable projectId that maps to a MongoDB project record.
+ */
+export async function generateViaBackendV2(
+	baseUrl: string,
+	projectId: string,
+	workspaceRootPath: string | undefined,
+	detectedStack: string,
+	userPrompt: string
+): Promise<IntelliGenerationResult> {
+	const root = baseUrl.replace(/\/$/, '');
+	const projectMap = await buildProjectMap(workspaceRootPath, detectedStack, userPrompt);
+
+	let data: { testCases?: ServerTestCase[]; meta?: unknown; error?: string; detail?: string; message?: string };
+	try {
+		const res = await axios.post(`${root}/generate`, {
+			projectId,
+			prompt: userPrompt,
+			...projectMap,
+		}, {
+			timeout: 120_000,
+			headers: { 'Content-Type': 'application/json' }
+		});
+		data = res.data;
+	} catch (err) {
+		throwAxiosDetail(err);
+	}
+
+	if (data?.error || data?.message?.startsWith('AI')) {
+		throw new Error(typeof data.detail === 'string' && data.detail ? data.detail : (data.error ?? data.message ?? 'Unknown error'));
+	}
+
+	const raw = Array.isArray(data?.testCases) ? data.testCases : [];
+	const testCases = raw.map(mapServerCase);
+
+	if (testCases.length === 0) {
+		throw new Error('The backend returned no test cases. Check server logs and LLM configuration.');
+	}
+
+	return {
+		recommendedTestingFramework: '',
+		testCases,
+		testScript: null
+	};
+}
+
+/**
+ * GET /project/:projectId/init — load the previous session for the current workspace.
+ * Called once when the extension activates.
+ *
+ * Returns null on network error (graceful degradation — extension still works stateless).
+ */
+export async function loadProjectSession(
+	baseUrl: string,
+	projectId: string
+): Promise<ProjectSession | null> {
+	const root = baseUrl.replace(/\/$/, '');
+	try {
+		const res = await axios.get<ProjectSession>(`${root}/project/${encodeURIComponent(projectId)}/init`, {
+			timeout: 10_000,
+		});
+		return res.data;
+	} catch (err) {
+		if (axios.isAxiosError(err) && (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND')) {
+			// Server not running — extension still works, just without history
+			return null;
+		}
+		// Re-throw other errors so callers can log them
+		throw err instanceof Error ? err : new Error(String(err));
+	}
+}
+
+// ── v1: legacy API (unchanged) ────────────────────────────────────────────────
+
 /**
  * Calls /generate-testcases then /generate-tests with the same project map plus structured test cases.
+ * @deprecated Prefer generateViaBackendV2 for new code.
  */
 export async function generateViaBackend(
 	baseUrl: string,
@@ -84,7 +218,7 @@ export async function generateViaBackend(
 	userPrompt: string
 ): Promise<IntelliGenerationResult> {
 	const root = baseUrl.replace(/\/$/, '');
-	const projectMap = buildProjectMap(workspaceRootPath, detectedStack, userPrompt);
+	const projectMap = await buildProjectMap(workspaceRootPath, detectedStack, userPrompt);
 
 	let data: { testCases?: ServerTestCase[]; error?: string; detail?: string };
 	try {

@@ -35,10 +35,19 @@ export function parseTestCasesArray(raw) {
   }
 }
 
+function normalizePreconditions(value) {
+  if (Array.isArray(value)) {
+    return value.map(String).filter(Boolean).join("; ");
+  }
+  return value != null ? String(value) : "";
+}
+
 function normalizeTestCases(items) {
   return items.map((tc, i) => ({
     id: String(tc.id ?? `TC-${String(i + 1).padStart(3, "0")}`),
     name: String(tc.name ?? "Unnamed test"),
+    description: tc.description != null ? String(tc.description) : "",
+    preconditions: normalizePreconditions(tc.preconditions),
     steps: Array.isArray(tc.steps) ? tc.steps.map(String) : [],
     expected: tc.expected != null ? String(tc.expected) : "",
     priority: tc.priority != null ? String(tc.priority) : undefined,

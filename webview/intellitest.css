@@ -155,6 +155,219 @@ label {
 	color: var(--vscode-foreground);
 }
 
+.insights-shell {
+	padding: 8px;
+	border: 1px solid var(--vscode-widget-border);
+	border-radius: 4px;
+	background-color: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+}
+
+.insights-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.insights-visibility {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: var(--vscode-foreground);
+	font-family: inherit;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.insights-visibility-arrow {
+	font-size: 11px;
+	line-height: 1;
+	color: var(--vscode-descriptionForeground);
+}
+
+.insights-panel {
+	border: 1px solid var(--vscode-panel-border, var(--vscode-widget-border));
+	border-radius: 2px;
+	max-height: 230px;
+	overflow: auto;
+	padding: 6px;
+	font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+	font-size: 11px;
+	background-color: var(--vscode-editor-background);
+}
+
+.insights-empty {
+	color: var(--vscode-descriptionForeground);
+	padding: 4px;
+}
+
+.insights-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.insight-file-name {
+	cursor: pointer;
+	font-weight: 500;
+	color: var(--vscode-foreground);
+	word-break: break-word;
+	display: inline-flex;
+	align-items: baseline;
+	gap: 6px;
+}
+
+.insight-file-name::-webkit-details-marker {
+	display: none;
+}
+
+.insight-file-name::marker {
+	content: '';
+}
+
+.insight-row-arrow {
+	display: inline-block;
+	font-size: 11px;
+	line-height: 1;
+	color: var(--vscode-descriptionForeground);
+	transform-origin: 50% 50%;
+	transition: transform 0.12s ease;
+}
+
+.insight-file[open] .insight-row-arrow {
+	transform: rotate(90deg);
+}
+
+.insight-file-base {
+	font-weight: 600;
+	color: var(--vscode-foreground);
+}
+
+.insight-file-folder {
+	font-size: 10px;
+	color: var(--vscode-descriptionForeground);
+}
+
+.insight-group {
+	padding-left: 12px;
+	padding-top: 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.insight-item {
+	color: var(--vscode-editor-foreground);
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.insight-title {
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	color: var(--vscode-descriptionForeground);
+	margin-bottom: 2px;
+}
+
+.insight-block {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 4px 6px;
+	border-radius: 3px;
+	border: 1px solid var(--vscode-widget-border);
+	background-color: var(--vscode-editor-inactiveSelectionBackground, var(--vscode-editor-background));
+}
+
+.insight-block-functions {
+	border-left: 2px solid var(--vscode-symbolIconFunctionForeground, var(--vscode-textLink-foreground));
+}
+
+.insight-block-variables {
+	border-left: 2px solid var(--vscode-symbolIconVariableForeground, var(--vscode-foreground));
+}
+
+.insight-block-classes {
+	border-left: 2px solid var(--vscode-symbolIconClassForeground, var(--vscode-foreground));
+}
+
+.insight-child {
+	padding-left: 12px;
+}
+
+.insight-muted {
+	color: var(--vscode-descriptionForeground);
+	padding-left: 12px;
+}
+
+.insight-fn {
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+	text-align: left;
+	cursor: pointer;
+	font: inherit;
+	color: var(--vscode-textLink-foreground);
+}
+
+.insight-fn:hover {
+	text-decoration: underline;
+}
+
+#refreshInsightsButton {
+	padding: 3px 8px;
+	min-height: 22px;
+	font-size: 11px;
+	border: 1px solid var(--vscode-widget-border);
+	background-color: var(--vscode-editor-background);
+	color: var(--vscode-foreground);
+}
+
+#refreshInsightsButton:hover {
+	background-color: var(--vscode-list-hoverBackground);
+	opacity: 1;
+}
+
+.insights-pagination {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 4px;
+	padding-top: 4px;
+	border-top: 1px solid var(--vscode-widget-border);
+}
+
+.insights-page-btn {
+	min-width: 24px;
+	height: 22px;
+	padding: 0 6px;
+	font-family: inherit;
+	font-size: 11px;
+	line-height: 1;
+	border: 1px solid var(--vscode-widget-border);
+	border-radius: 2px;
+	background-color: var(--vscode-editor-background);
+	color: var(--vscode-foreground);
+	cursor: pointer;
+}
+
+.insights-page-btn:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.insights-page-btn.active {
+	border-color: var(--vscode-focusBorder);
+	background-color: var(--vscode-list-activeSelectionBackground);
+	color: var(--vscode-list-activeSelectionForeground);
+}
+
 .table-wrap {
 	overflow: auto;
 	max-height: 360px;

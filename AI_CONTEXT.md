@@ -16,6 +16,7 @@ IntelliTest is a VS Code extension that generates structured software test cases
 
 Primary objective:
 - help developers and testers quickly generate practical, structured test cases from a user prompt, while also considering project context
+- include the most relevant code symbols and files when the prompt names a specific file or area
 
 ## Core Features
 - Sidebar UI inside VS Code
@@ -40,7 +41,9 @@ High-level component responsibilities:
 - [src/providers/IntelliTestViewProvider.ts](src/providers/IntelliTestViewProvider.ts): backend orchestration for webview interactions, generation flow, and export flow
 - [src/services/groq.ts](src/services/groq.ts): AI integration layer and structured JSON parsing
 - [src/services/techStack.ts](src/services/techStack.ts): tech stack detection logic
-- [src/services/codebaseContext.ts](src/services/codebaseContext.ts): codebase context builder (file names only, broad scan)
+- [src/services/codebaseContext.ts](src/services/codebaseContext.ts): broad codebase context builder for file-name awareness
+- [src/services/codeInsights.ts](src/services/codeInsights.ts): AST-based symbol extraction with syntax and semantic layers
+- [src/services/projectMap.ts](src/services/projectMap.ts): builds prioritized AI context from tech stack, routes, modules, code insights, and prompt hints
 - [src/services/excel.ts](src/services/excel.ts): Excel workbook generation and file export
 - [src/types/messages.ts](src/types/messages.ts): webview-backend message contract
 - [src/types/testCases.ts](src/types/testCases.ts): strongly typed test case data model
@@ -69,15 +72,28 @@ Key points:
 - Behavior controlled by a system prompt and structured user prompt assembly
 - AI must return JSON in the expected schema
 - Parser supports practical model output patterns and normalizes into internal types
+- structured code insights are added when available, with priority files moved to the front of the context
 
 ### Current Prompting Strategy
 AI input combines:
 - user prompt
 - detected tech stack
 - project file-name context
+- structured code insights extracted from the workspace
+
+### Code Context Strategy
+The repository does not send raw file contents character-by-character to the model. Instead, it parses supported JS/TS files into an AST and extracts only the relevant symbols:
+- function names, parameters, and type signatures
+- class names and method names
+- variable names and inferred/declared types where available
+- import paths
+- optional JSDoc descriptions when present
+
+If the user mentions a specific file in the prompt, that file is prioritized in the generated context so its symbols appear first.
 
 Scope behavior:
 - if user explicitly limits scope with terms like only, just, limit to, or focus on, generation must stay within that scope
+- if the user mentions a filename, that file is prioritized in the code context
 - otherwise generation can provide broader relevant coverage
 
 ## Coding Guidelines
@@ -141,6 +157,10 @@ Additional output requirement:
 - deeper multi-file relevance selection for context building
 - automated test code generation from approved test cases
 - per-project settings for framework preferences and output style
+
+## Notes for AI Tools
+- Do not assume raw file contents are sent to the model; the current design sends structured symbol context instead
+- Prefer updating this file when the codebase gains new context-building or AI-prompt behavior
 
 ## Instructions for AI Tools
 Before making changes:

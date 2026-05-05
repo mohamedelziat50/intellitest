@@ -24,7 +24,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 			IntelliTestViewProvider.viewType,
-			new IntelliTestViewProvider(context.extensionUri, detectedStack, recommendedTestingFramework)
+			// Pass context so the provider can persist projectId in workspaceState
+			new IntelliTestViewProvider(context, context.extensionUri, detectedStack, recommendedTestingFramework)
 		)
 	);
 }
