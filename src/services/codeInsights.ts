@@ -199,7 +199,7 @@ export async function getCodeInsights(
 		SUPPORTED_EXTENSIONS.has(path.extname(relativePath).toLowerCase())
 	);
 
-	console.log(`[IntelliTest AST Parser] Starting AST analysis on ${candidates.length} candidate files.`);
+	console.log(`[Debuggo AST Parser] Starting AST analysis on ${candidates.length} candidate files.`);
 
 	const files: CodeInsightFile[] = [];
 	for (const relativePath of candidates) {

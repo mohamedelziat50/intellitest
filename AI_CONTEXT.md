@@ -1,4 +1,4 @@
-# AI Context for IntelliTest
+# AI Context for Debuggo
 
 ## Purpose
 This document is the primary context guide for any AI coding assistant working on this repository.
@@ -12,7 +12,7 @@ Use this as the source of truth for:
 - coding and integration conventions
 
 ## Project Overview
-IntelliTest is a VS Code extension that generates structured software test cases using AI.
+Debuggo is a VS Code extension that generates structured software test cases using AI.
 
 Primary objective:
 - help developers and testers quickly generate practical, structured test cases from a user prompt, while also considering project context
@@ -38,7 +38,7 @@ Primary objective:
 ## Architecture
 High-level component responsibilities:
 - [src/extension.ts](src/extension.ts): extension activation and provider registration
-- [src/providers/IntelliTestViewProvider.ts](src/providers/IntelliTestViewProvider.ts): backend orchestration for webview interactions, generation flow, and export flow
+- [src/providers/DebuggoViewProvider.ts](src/providers/DebuggoViewProvider.ts): backend orchestration for webview interactions, generation flow, and export flow
 - [src/services/groq.ts](src/services/groq.ts): AI integration layer and structured JSON parsing
 - [src/services/techStack.ts](src/services/techStack.ts): tech stack detection logic
 - [src/services/codebaseContext.ts](src/services/codebaseContext.ts): broad codebase context builder for file-name awareness
@@ -47,9 +47,9 @@ High-level component responsibilities:
 - [src/services/excel.ts](src/services/excel.ts): Excel workbook generation and file export
 - [src/types/messages.ts](src/types/messages.ts): webview-backend message contract
 - [src/types/testCases.ts](src/types/testCases.ts): strongly typed test case data model
-- [webview/intellitest.html](webview/intellitest.html): sidebar markup
-- [webview/intellitest.css](webview/intellitest.css): VS Code-themed styling
-- [webview/intellitest.js](webview/intellitest.js): frontend behavior, state updates, and message handling
+- [webview/debuggo.html](webview/debuggo.html): sidebar markup
+- [webview/debuggo.css](webview/debuggo.css): VS Code-themed styling
+- [webview/debuggo.js](webview/debuggo.js): frontend behavior, state updates, and message handling
 
 ### Message Passing Model
 Communication is event-driven between webview and extension backend.
@@ -65,7 +65,7 @@ Backend to webview commands:
 - exportStatus
 
 ## AI Integration
-The extension uses Groq Chat Completions as an external LLM provider.
+The extension uses Groq’s OpenAI-compatible Chat Completions API as the default external LLM provider (configurable via environment variables).
 
 Key points:
 - API transport via Axios
@@ -149,7 +149,7 @@ Additional output requirement:
 
 ## Security and Config Notes
 - Do not commit secrets
-- Use environment variable GROQ_API_KEY
+- Configure AI provider variables in `Server/.env` (from `Server/.env.example`)
 - Debug run configuration supports environment loading via [ .vscode/launch.json ](.vscode/launch.json)
 
 ## Future Extensions

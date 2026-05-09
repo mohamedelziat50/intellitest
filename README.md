@@ -1,8 +1,8 @@
-# IntelliTest
+# Debuggo
 
 AI-powered VS Code extension for generating structured software test cases.
 
-IntelliTest is a VS Code sidebar extension that helps developers and testers generate clean, structured test cases using an external AI model. It combines the user prompt with project context (detected stack and codebase file context), shows results in a table preview, recommends a testing framework, and supports Excel export.
+Debuggo is a VS Code sidebar extension that helps developers and testers generate clean, structured test cases using an external AI model. It combines the user prompt with project context (detected stack and codebase file context), shows results in a table preview, recommends a testing framework, and supports Excel export.
 
 ## Features
 
@@ -36,11 +36,11 @@ Key files and folders:
   - Extension activation and registration of the webview provider.
   - Main backend entrypoint for VS Code integration.
 
-- `src/providers/IntelliTestViewProvider.ts`
+- `src/providers/DebuggoViewProvider.ts`
   - Core backend view logic: prompt handling, AI generation flow, export flow, and webview messaging.
 
 - `src/services/groq.ts`
-  - AI API integration layer (Groq) and structured JSON parsing.
+  - AI API integration layer (Groq OpenAI-compatible API) and structured JSON parsing.
 
 - `src/services/techStack.ts`
   - Detects project technology stack from workspace files.
@@ -68,13 +68,13 @@ Key files and folders:
 - `webview/`
   - Frontend sidebar UI assets.
 
-- `webview/intellitest.html`
+- `webview/debuggo.html`
   - Sidebar layout and UI structure.
 
-- `webview/intellitest.js`
+- `webview/debuggo.js`
   - Handles UI interactions and message passing with backend.
 
-- `webview/intellitest.css`
+- `webview/debuggo.css`
   - VS Code-themed styling using theme variables.
 
 - `package.json`
@@ -83,21 +83,21 @@ Key files and folders:
 - `AI_CONTEXT.md`
   - Context file for AI tools and coding assistants.
 
-Note: If you prefer naming like `webview/index.html`, `webview/script.js`, `webview/style.css`, this project currently uses `intellitest.html`, `intellitest.js`, and `intellitest.css` with the same roles.
+Note: If you prefer naming like `webview/index.html`, `webview/script.js`, `webview/style.css`, this project currently uses `debuggo.html`, `debuggo.js`, and `debuggo.css` with the same roles.
 
 ## How It Works
 
-1. User enters a prompt in the IntelliTest sidebar.
+1. User enters a prompt in the Debuggo sidebar.
 2. Extension detects the project tech stack.
 3. **Codebase is scanned**: Static analysis extracts functions, classes, and variables from JS/TS files using the TypeScript Compiler API.
 4. **Code context is built**: Project structure (routes, modules), code symbols, and detected priority files are packaged into a structured payload.
-5. Request is sent to AI (Groq API) with prompt + comprehensive project context.
+5. Request is sent to AI (Groq or configured OpenAI-compatible API) with prompt + comprehensive project context.
 6. AI returns structured JSON test cases.
 7. Results are displayed in the sidebar table preview with optional Excel export.
 
 ## Codebase Content Reading Feature
 
-IntelliTest includes a **dual-layer code analysis engine** that combines **syntax extraction** (what code exists) with **semantic extraction** (what code means).
+Debuggo includes a **dual-layer code analysis engine** that combines **syntax extraction** (what code exists) with **semantic extraction** (what code means).
 
 ### Two-Layer Analysis
 
@@ -233,7 +233,7 @@ Combined Result:
 Sent to AI for smarter test generation
 ```
 
-**Efficient Extraction:** IntelliTest does NOT parse every character. Instead, it walks the AST tree, checking node types (`isFunctionDeclaration`, `isClassDeclaration`, etc.) and extracting only matched symbols with their metadata. A 1000-line file might yield only 5-10 functions—keeping context small and focused.
+**Efficient Extraction:** Debuggo does NOT parse every character. Instead, it walks the AST tree, checking node types (`isFunctionDeclaration`, `isClassDeclaration`, etc.) and extracting only matched symbols with their metadata. A 1000-line file might yield only 5-10 functions—keeping context small and focused.
 
 ### File-by-File Breakdown
 
@@ -243,7 +243,7 @@ Sent to AI for smarter test generation
 | **codeInsights.ts** | 67-80 | `buildFunctionSignature()` - reads TypeScript types |
 | **codeInsights.ts** | 82-130 | `extractFromSourceFile()` - walks AST, combines both layers |
 | **projectMap.ts** | 60-100 | `summarizeCodeInsightsForAi()` - formats for AI |
-| **promptService.js** | Backend | Sends formatted code context to Groq LLM |
+| **promptService.js** | Backend | Sends formatted code context to the configured LLM (Groq when using default API settings) |
 
 ### What Gets Extracted (Simple)
 
@@ -305,14 +305,17 @@ function validatePassword(password, minLength) { }
 ---
 
 ## AI Integration
-- Requires `GROQ_API_KEY`.
+- Requires backend AI config in `Server/.env`.
 - Backend builds system and user prompts, requests structured JSON, and normalizes responses.
 
 ### API Key Setup
 
-Set your key before running:
+Set your key before running in `Server/.env` (based on `Server/.env.example`):
 
-- Environment variable: `GROQ_API_KEY`
+- `LLM_PROVIDER=api`
+- `API_BASE_URL=https://api.groq.com/openai/v1` (optional; this is the default in config when unset)
+- `API_KEY=<your_groq_api_key>` (or `GROQ_API_KEY`)
+- `API_MODEL=llama-3.3-70b-versatile` (or another [Groq model](https://console.groq.com/docs/models))
 
 For local VS Code debugging, `.vscode/launch.json` can load environment variables from `.env`.
 
@@ -334,7 +337,7 @@ For local VS Code debugging, `.vscode/launch.json` can load environment variable
 ## Configuration
 
 - Required:
-  - `GROQ_API_KEY`
+  - `Server/.env` with valid `API_KEY` or `GROQ_API_KEY`
 - Recommended:
   - Keep `.env` local and out of source control.
   - Ensure your debug launch configuration loads your environment values.

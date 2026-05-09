@@ -1,5 +1,5 @@
 /**
- * BackendClient — all HTTP calls from the extension to the IntelliTest backend.
+ * BackendClient — all HTTP calls from the extension to the Debuggo backend.
  *
  * New stateful API (v2):
  *   generateViaBackendV2()  → POST /generate   (context-aware, persisted)
@@ -133,7 +133,7 @@ function throwAxiosDetail(err: unknown): never {
 	if (axios.isAxiosError(err)) {
 		if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
 			throw new Error(
-				'Cannot reach the IntelliTest backend. Start the server (cd Server && npm start) and set Settings → intellitest.backendUrl to the correct URL.'
+				'Cannot reach the Debuggo backend. Check your network, verify Settings → debuggo.backendUrl (hosted: https://intellitest-hyvw.onrender.com), or run the API locally (cd Server && npm start).'
 			);
 		}
 		const fromBody = err.response?.data != null ? messageFromResponseData(err.response.data) : undefined;
@@ -163,7 +163,7 @@ export async function generateViaBackendV2(
 	const lightweightFiles = listProjectRelativePaths(workspaceRootPath, 1000);
 	
 	// Ask backend to map prompt to features and dependencies
-	console.log(`[IntelliTest Pass 1] Sending prompt: "${userPrompt}" with ${lightweightFiles.length} raw files to /analyze-intent`);
+	console.log(`[Debuggo Pass 1] Sending prompt: "${userPrompt}" with ${lightweightFiles.length} raw files to /analyze-intent`);
 	const intentAnalysis = await analyzeIntentV2(baseUrl, projectId, userPrompt, lightweightFiles);
 	
 	// If API succeeded, use its files (even if empty, meaning feature not found).
@@ -172,7 +172,7 @@ export async function generateViaBackendV2(
 		? intentAnalysis.relevantFiles 
 		: undefined;
 
-	console.log(`[IntelliTest Pass 1 Result] Backend returned ${relevantFiles?.length || 0} relevant files. Decision: ${intentAnalysis?.decision}`);
+	console.log(`[Debuggo Pass 1 Result] Backend returned ${relevantFiles?.length || 0} relevant files. Decision: ${intentAnalysis?.decision}`);
 
 	// Intercept missing features before doing any heavy lifting
 	if (intentAnalysis && intentAnalysis.decision === 'none') {
@@ -180,7 +180,7 @@ export async function generateViaBackendV2(
 			? ` Did you mean to test: ${intentAnalysis.suggestions.join(', ')}?`
 			: '';
 		throw new Error(
-			`We couldn't find any code matching "${userPrompt}" in your project. IntelliTest requires the feature to exist in your codebase before it can generate meaningful tests for it. Please check your spelling or verify the feature is implemented.${suggestions}`
+			`We couldn't find any code matching "${userPrompt}" in your project. Debuggo requires the feature to exist in your codebase before it can generate meaningful tests for it. Please check your spelling or verify the feature is implemented.${suggestions}`
 		);
 	}
 
@@ -188,16 +188,16 @@ export async function generateViaBackendV2(
 	if (intentAnalysis && intentAnalysis.isFlowTest && intentAnalysis.relatedFeatures?.length > 0) {
 		const related = intentAnalysis.relatedFeatures.join(", ");
 		vscode.window.showInformationMessage(
-			`IntelliTest: You requested an E2E flow. We detected this depends on [${related}]. Including these dependencies in the context for accurate root-cause analysis.`
+			`Debuggo: You requested an E2E flow. We detected this depends on [${related}]. Including these dependencies in the context for accurate root-cause analysis.`
 		);
 	}
 
 	// PASS 2: Targeted Generation
 	// Build map using ONLY the relevant files
-	console.log(`[IntelliTest Pass 2] Building project map with ${relevantFiles ? 'whitelist' : 'full project'}...`);
+	console.log(`[Debuggo Pass 2] Building project map with ${relevantFiles ? 'whitelist' : 'full project'}...`);
 	const projectMap = await buildProjectMap(workspaceRootPath, detectedStack, userPrompt, relevantFiles);
 
-	console.log(`[IntelliTest Final Payload] Sending to LLM:
+	console.log(`[Debuggo Final Payload] Sending to LLM:
 - Routes attached: ${projectMap.routes.length}
 - Files fully parsed (Code Insights): ${projectMap.codeInsights.length}
 - Target Modules: ${projectMap.modules.length}`);
@@ -258,7 +258,7 @@ export async function analyzeIntentV2(
 		return res.data;
 	} catch (err) {
 		// Non-critical: if intent analysis fails, we can fallback to full map
-		console.warn('IntelliTest: analyzeIntentV2 failed', err);
+		console.warn('Debuggo: analyzeIntentV2 failed', err);
 		return null;
 	}
 }
@@ -281,7 +281,7 @@ export async function syncProject(
 		});
 		return true;
 	} catch (err) {
-		console.warn('IntelliTest: syncProject failed', err);
+		console.warn('Debuggo: syncProject failed', err);
 		return false;
 	}
 }

@@ -75,7 +75,7 @@ async function callOpenAICompatible(prompt, signal) {
     throw new AiError(
       "backend",
       "MissingConfig",
-      "API_BASE_URL and API_KEY are required when LLM_PROVIDER=api"
+      "API_BASE_URL and API_KEY (or GROQ_API_KEY) are required when LLM_PROVIDER=api"
     );
   }
 
