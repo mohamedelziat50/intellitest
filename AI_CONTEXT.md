@@ -65,7 +65,7 @@ Backend to webview commands:
 - exportStatus
 
 ## AI Integration
-The extension uses Groq Chat Completions as an external LLM provider.
+Primary path: the **Node backend** calls an **OpenAI-compatible** Chat Completions API. Configure the provider in `Server/.env` (e.g. [OpenRouter](https://openrouter.ai/) or Groq). See `Documents/OpenRouter-Setup.md` and `Server/.env.example`.
 
 Key points:
 - API transport via Axios
@@ -149,7 +149,7 @@ Additional output requirement:
 
 ## Security and Config Notes
 - Do not commit secrets
-- Use environment variable GROQ_API_KEY
+- Configure LLM in `Server/.env`: `API_BASE_URL`, `API_KEY`, `API_MODEL` when `LLM_PROVIDER=api`
 - Debug run configuration supports environment loading via [ .vscode/launch.json ](.vscode/launch.json)
 
 ## Future Extensions

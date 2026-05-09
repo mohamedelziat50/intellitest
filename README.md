@@ -40,7 +40,7 @@ Key files and folders:
   - Core backend view logic: prompt handling, AI generation flow, export flow, and webview messaging.
 
 - `src/services/groq.ts`
-  - AI API integration layer (Groq) and structured JSON parsing.
+  - Legacy/direct LLM helper (if used); primary generation goes through the backend.
 
 - `src/services/techStack.ts`
   - Detects project technology stack from workspace files.
@@ -91,7 +91,7 @@ Note: If you prefer naming like `webview/index.html`, `webview/script.js`, `webv
 2. Extension detects the project tech stack.
 3. **Codebase is scanned**: Static analysis extracts functions, classes, and variables from JS/TS files using the TypeScript Compiler API.
 4. **Code context is built**: Project structure (routes, modules), code symbols, and detected priority files are packaged into a structured payload.
-5. Request is sent to AI (Groq API) with prompt + comprehensive project context.
+5. Request is sent to the configured LLM API (e.g. OpenRouter) with prompt + comprehensive project context.
 6. AI returns structured JSON test cases.
 7. Results are displayed in the sidebar table preview with optional Excel export.
 
@@ -243,7 +243,7 @@ Sent to AI for smarter test generation
 | **codeInsights.ts** | 67-80 | `buildFunctionSignature()` - reads TypeScript types |
 | **codeInsights.ts** | 82-130 | `extractFromSourceFile()` - walks AST, combines both layers |
 | **projectMap.ts** | 60-100 | `summarizeCodeInsightsForAi()` - formats for AI |
-| **promptService.js** | Backend | Sends formatted code context to Groq LLM |
+| **promptService.js** | Backend | Builds prompts for the LLM (OpenRouter / other OpenAI-compatible API) |
 
 ### What Gets Extracted (Simple)
 
@@ -305,16 +305,24 @@ function validatePassword(password, minLength) { }
 ---
 
 ## AI Integration
-- Requires `GROQ_API_KEY`.
-- Backend builds system and user prompts, requests structured JSON, and normalizes responses.
+- Backend calls an **OpenAI-compatible** Chat Completions API (`/chat/completions`). Default template uses **[OpenRouter](https://openrouter.ai/)**.
+- Full step-by-step: [Documents/OpenRouter-Setup.md](Documents/OpenRouter-Setup.md).
 
-### API Key Setup
+### API setup (`Server/.env`)
 
-Set your key before running:
+Copy `Server/.env.example` to `Server/.env`, then set when using OpenRouter:
 
-- Environment variable: `GROQ_API_KEY`
+- `LLM_PROVIDER=api`
+- `API_BASE_URL=https://openrouter.ai/api/v1`
+- `API_KEY` — create at [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)
+- `API_MODEL` — exact id from [openrouter.ai/models](https://openrouter.ai/models) (not the Hugging Face id)
 
-For local VS Code debugging, `.vscode/launch.json` can load environment variables from `.env`.
+Optional attribution headers (recommended by OpenRouter for leaderboards):
+
+- `OPENROUTER_HTTP_REFERER`
+- `OPENROUTER_APP_TITLE`
+
+For local VS Code debugging, `.vscode/launch.json` can load environment variables if you configure it.
 
 ## Excel Export
 
@@ -333,11 +341,11 @@ For local VS Code debugging, `.vscode/launch.json` can load environment variable
 
 ## Configuration
 
-- Required:
-  - `GROQ_API_KEY`
+- Required (backend LLM via `Server/.env`):
+  - `API_KEY`, `API_BASE_URL`, `API_MODEL` when `LLM_PROVIDER=api`
 - Recommended:
-  - Keep `.env` local and out of source control.
-  - Ensure your debug launch configuration loads your environment values.
+  - Keep `Server/.env` local and never commit secrets.
+  - Set VS Code setting `intellitest.backendUrl` to match your backend (e.g. `http://localhost:3000`).
 
 ## Development Notes
 

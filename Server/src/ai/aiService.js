@@ -65,11 +65,26 @@ async function callOllama(prompt, signal) {
 }
 
 /**
- * Single call to an OpenAI-compatible HTTP API (Groq, OpenAI, etc.).
+ * Single call to an OpenAI-compatible HTTP API (OpenRouter, Groq, OpenAI, etc.).
  * @param {string} prompt
  * @param {AbortSignal} signal
  * @returns {Promise<string>}
  */
+function buildOpenAICompatibleHeaders() {
+  const headers = {
+    Authorization:  `Bearer ${cfg.apiKey}`,
+    "Content-Type": "application/json",
+  };
+  const base = (cfg.apiBase || "").toLowerCase();
+  if (base.includes("openrouter.ai")) {
+    const referer = cfg.openRouterHttpReferer?.trim();
+    const title = cfg.openRouterAppTitle?.trim();
+    if (referer) headers["HTTP-Referer"] = referer;
+    if (title) headers["X-OpenRouter-Title"] = title;
+  }
+  return headers;
+}
+
 async function callOpenAICompatible(prompt, signal) {
   if (!cfg.apiBase || !cfg.apiKey) {
     throw new AiError(
@@ -90,10 +105,7 @@ async function callOpenAICompatible(prompt, signal) {
     const { data } = await axios.post(url, body, {
       signal,
       timeout: cfg.timeoutMs + 5_000,
-      headers: {
-        Authorization:  `Bearer ${cfg.apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: buildOpenAICompatibleHeaders(),
     });
     const choice = data?.choices?.[0]?.message?.content;
     return typeof choice === "string" ? choice : JSON.stringify(choice ?? "");

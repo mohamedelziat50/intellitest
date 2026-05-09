@@ -52,10 +52,13 @@ export const ai = Object.freeze({
   ollamaBase: optionalEnv("OLLAMA_BASE_URL", "http://localhost:11434"),
   ollamaModel: optionalEnv("OLLAMA_MODEL", "llama3.2"),
 
-  // OpenAI-compatible API (Groq, OpenAI, etc.)
+  // OpenAI-compatible API (OpenRouter, Groq, OpenAI, self-hosted vLLM, etc.)
   apiBase: optionalEnv("API_BASE_URL", ""),
   apiKey: optionalEnv("API_KEY", ""),
   apiModel: optionalEnv("API_MODEL", "gpt-4o-mini"),
+  // OpenRouter attribution (optional; see https://openrouter.ai/docs/quickstart )
+  openRouterHttpReferer: optionalEnv("OPENROUTER_HTTP_REFERER", ""),
+  openRouterAppTitle: optionalEnv("OPENROUTER_APP_TITLE", ""),
 
   // Timeouts & retries
   timeoutMs: optionalInt("AI_TIMEOUT_MS", 30_000),
