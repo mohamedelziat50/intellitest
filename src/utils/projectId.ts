@@ -14,7 +14,9 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 
-const STORAGE_KEY = 'intellitest.projectId';
+const STORAGE_KEY = 'debuggo.projectId';
+/** Previous key — migrated once so upgrading from the IntelliTest-named extension keeps the same backend project id in dev/local scenarios. */
+const LEGACY_STORAGE_KEY = 'intellitest.projectId';
 
 /**
  * Returns a stable projectId for the current workspace.
@@ -23,9 +25,16 @@ const STORAGE_KEY = 'intellitest.projectId';
  * @param context — VS Code ExtensionContext (provides workspaceState)
  */
 export function getOrCreateProjectId(context: vscode.ExtensionContext): string {
-	const stored = context.workspaceState.get<string>(STORAGE_KEY);
+	let stored = context.workspaceState.get<string>(STORAGE_KEY);
 	if (stored && isValidProjectId(stored)) {
 		return stored;
+	}
+
+	const legacy = context.workspaceState.get<string>(LEGACY_STORAGE_KEY);
+	if (legacy && isValidProjectId(legacy)) {
+		void context.workspaceState.update(STORAGE_KEY, legacy);
+		void context.workspaceState.update(LEGACY_STORAGE_KEY, undefined);
+		return legacy;
 	}
 
 	const newId = generateUUID();

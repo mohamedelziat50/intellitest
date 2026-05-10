@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src {{cspSource}} https:; style-src {{cspSource}}; script-src {{cspSource}};">
+    <title>Debuggo</title>
+    <link rel="stylesheet" href="{{highlightCssUri}}">
+    <link rel="stylesheet" href="{{styleUri}}">
+</head>
+<body>
+    <main class="container">
+        <div id="appWorkspace" class="app-workspace">
+            <div id="needsBackendBanner" class="auth-banner" role="status" hidden>
+                Set <strong>debuggo.backendUrl</strong> in VS Code Settings to your server URL (for example <code>http://localhost:3000</code>), then reload this panel.
+            </div>
+            <div id="bootstrapErrorBanner" class="auth-error-banner" role="alert" hidden></div>
+
+            <div class="header-bar">
+                <div class="header-brand">
+                    <img src="{{brandMascotUri}}" width="28" height="28" class="brand-mascot" alt="" decoding="async" />
+                    <h1>Debuggo</h1>
+                </div>
+                <div class="header-actions">
+                    <span id="userLabel" class="user-label" title="Signed-in account"></span>
+                    <button type="button" id="signInAccountButton" class="dg-ghost-btn dg-header-btn" title="Create an account or sign in — optional">
+                        Sign in
+                    </button>
+                    <button type="button" id="logoutButton" class="dg-ghost-btn dg-header-btn" hidden title="Sign out of Debuggo">
+                        Log out
+                    </button>
+                    <button type="button" id="syncProjectButton" class="dg-ghost-btn dg-header-btn dg-header-btn-strong" title="Rebuild the project dependency map from your workspace files. Use after adding, removing, or renaming files or folders.">Sync</button>
+                </div>
+            </div>
+
+            <section id="authGate" class="auth-gate auth-gate-panel dg-auth-card" aria-label="Sign in to Debuggo" hidden>
+                <header class="auth-card-head">
+                    <div class="auth-head-top">
+                        <h2 class="auth-title">Account</h2>
+                        <button type="button" id="cancelAuthPanelBtn" class="auth-panel-dismiss" aria-label="Close panel">×</button>
+                    </div>
+                    <p class="auth-lead dg-muted-copy">Optional sign-in persists sessions on the server. Guests can use Debuggo without an account.</p>
+                </header>
+
+                <div class="auth-mode-row" role="tablist" aria-label="Account mode">
+                    <button type="button" id="modeLoginBtn" class="auth-tab active" role="tab" aria-selected="true">Log in</button>
+                    <button type="button" id="modeSignupBtn" class="auth-tab" role="tab" aria-selected="false">Sign up</button>
+                </div>
+
+                <form id="authForm" class="auth-form" novalidate>
+                    <div id="nameFieldWrap" class="form-group dg-auth-field" hidden>
+                        <label for="authName">Name</label>
+                        <input id="authName" class="input-field dg-auth-input" type="text" autocomplete="name" minlength="1" />
+                    </div>
+                    <div class="form-group dg-auth-field">
+                        <label for="authEmail">Email</label>
+                        <input id="authEmail" class="input-field dg-auth-input" type="email" required autocomplete="email" />
+                    </div>
+                    <div class="form-group dg-auth-field">
+                        <label for="authPassword">Password</label>
+                        <input id="authPassword" class="input-field dg-auth-input" type="password" required autocomplete="current-password" />
+                    </div>
+                    <p id="authInlineError" class="auth-inline-error" role="alert" hidden></p>
+                    <div class="auth-actions">
+                        <button type="submit" id="authSubmitBtn" class="btn-primary auth-submit">Continue</button>
+                        <button type="button" id="authRetryBtn" class="dg-ghost-btn auth-footer-ghost" hidden>Retry</button>
+                    </div>
+                </form>
+            </section>
+
+            <p class="description">Generate personalized test cases using your prompt plus an intelligent full project-wide codebase scan.</p>
+
+            <div class="stack-detect-card" id="stackDetectCard" hidden>
+                <div class="stack-detect-heading">Detected Tech Stack</div>
+                <div id="stackPills" class="pill-list stack-detect-pills"></div>
+            </div>
+
+            <div class="framework-suggest-card" id="frameworkCard">
+                <span class="framework-suggest-heading">Suggested framework</span>
+                <span class="pill pill-framework pill-fw" id="frameworkPill" title="Testing framework suggested for this workspace / last generation"><span id="framework">Not generated yet</span></span>
+            </div>
+
+            <div class="form-group">
+                <label for="promptInput">Prompt</label>
+                <input id="promptInput" type="text" placeholder="e.g., Generate login system test cases" class="input-field">
+            </div>
+
+            <div class="actions">
+                <button id="generateButton" class="btn-primary">Generate Test Cases</button>
+                <button id="exportButton" class="btn-secondary actions-outline" disabled>Export to Excel</button>
+                <button id="generateCodeButton" class="btn-secondary actions-outline btn-generate-context" disabled>Generate code</button>
+            </div>
+
+            <p id="generationStatus" class="generation-status" role="status" aria-live="polite" hidden></p>
+
+            <div id="promptChips" class="prompt-chips" role="group" aria-label="Example prompts" hidden>
+                <span class="prompt-chips-lead">Try</span>
+                <button type="button" class="prompt-chip" data-prompt="Generate test cases covering login edge cases: invalid credentials, locked accounts, SSO timeout, password reset flows.">Login edge cases</button>
+                <button type="button" class="prompt-chip" data-prompt="Generate test cases for checkout validation: cart limits, expired coupons, address validation errors, payment failure handling.">Checkout validation</button>
+                <button type="button" class="prompt-chip" data-prompt="Generate test cases for JWT authentication: malformed tokens, expired tokens, revoked refresh tokens, role-based access.">JWT authentication</button>
+            </div>
+
+            <section class="dg-section-shell testcases-shell" aria-labelledby="testcasesHeading">
+                <header class="dg-section-head">
+                    <button id="testcasesVisibilityButton" class="dg-section-toggle" type="button" aria-expanded="true">
+                        <span id="testcasesVisibilityArrow" class="dg-toggle-chevron" aria-hidden="true">▾</span>
+                        <span id="testcasesHeading" class="dg-section-heading">Test cases</span>
+                    </button>
+                    <span class="dg-secondary-hint dg-section-hint" id="testcasesSectionHint"></span>
+                </header>
+                <div id="testcasesCollapse" class="dg-collapsible" data-collapsed="false">
+                    <div class="dg-collapsible-fill">
+                        <div id="testcasesPanel" class="dg-scroll-pane testcases-panel">
+                            <div id="previewCards" class="tc-card-list">
+                                <div class="tc-empty dg-muted-copy">Generate from a prompt above to see scenarios here.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="dg-section-shell insights-shell" aria-labelledby="insightsHeading">
+                <header class="dg-section-head dg-section-head-toolbar">
+                    <button id="insightsVisibilityButton" class="dg-section-toggle" type="button" aria-expanded="true">
+                        <span id="insightsVisibilityArrow" class="dg-toggle-chevron" aria-hidden="true">▾</span>
+                        <span id="insightsHeading" class="dg-section-heading">Code insights</span>
+                    </button>
+                    <button id="refreshInsightsButton" class="dg-ghost-btn" type="button">Refresh</button>
+                </header>
+                <div id="insightsCollapse" class="dg-collapsible" data-collapsed="false">
+                    <div class="dg-collapsible-fill">
+                        <div id="insightsPanel" class="dg-scroll-pane insights-panel">
+                            <div id="insightsEmpty" class="insights-empty dg-muted-copy">Analyze symbols after opening a workspace folder.</div>
+                            <div id="insightsList" class="insights-list" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="dg-section-shell script-shell" id="scriptSection" aria-labelledby="scriptHeading">
+                <header class="dg-section-head dg-section-head-toolbar">
+                    <button id="scriptVisibilityButton" class="dg-section-toggle" type="button" aria-expanded="true">
+                        <span id="scriptVisibilityArrow" class="dg-toggle-chevron" aria-hidden="true">▾</span>
+                        <span id="scriptHeading" class="dg-section-heading">Generated code</span>
+                    </button>
+                    <div class="script-toolbar-actions" id="scriptToolbarActions">
+                        <button type="button" id="copyScriptButton" class="dg-ghost-btn" disabled>Copy</button>
+                        <button type="button" id="saveScriptButton" class="dg-ghost-btn" disabled>Save…</button>
+                    </div>
+                </header>
+                <div id="scriptCollapse" class="dg-collapsible" data-collapsed="false">
+                    <div class="dg-collapsible-fill">
+                        <div id="scriptInnerPanel" class="script-inner-panel">
+                            <div id="scriptMeta" class="script-meta" hidden></div>
+                            <div id="scriptPlaceholder" class="script-placeholder dg-muted-copy"></div>
+                            <pre class="script-pre" id="scriptPreOuter" aria-label="Generated test code" hidden><code id="scriptPre" class="hljs"></code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="{{highlightScriptUri}}"></script>
+    <script src="{{scriptUri}}"></script>
+</body>
+</html>

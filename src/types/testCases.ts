@@ -24,4 +24,6 @@ export type TestScriptSuggestion = {
 
 export type IntelliGenerationResult = GeneratedTestCases & {
 	testScript: TestScriptSuggestion | null;
+	/** Full JSON body from the last POST /generate (for POST /generate-test-code). */
+	generateApiPayload?: Record<string, unknown>;
 };

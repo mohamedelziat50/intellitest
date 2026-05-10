@@ -10,9 +10,9 @@ function getConfig() {
     provider,
     ollamaBase: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
     ollamaModel: process.env.OLLAMA_MODEL || "llama3.2",
-    apiBase: process.env.API_BASE_URL || "",
-    apiKey: process.env.API_KEY || "",
-    apiModel: process.env.API_MODEL || "gpt-4o-mini",
+    apiBase: process.env.API_BASE_URL || "https://api.groq.com/openai/v1",
+    apiKey: (process.env.API_KEY || process.env.GROQ_API_KEY || "").trim(),
+    apiModel: process.env.API_MODEL || "llama-3.3-70b-versatile",
   };
 }
 
@@ -47,7 +47,7 @@ async function completeOllama(cfg, prompt) {
 
 async function completeOpenAICompatible(cfg, prompt) {
   if (!cfg.apiBase || !cfg.apiKey) {
-    throw new Error("API_BASE_URL and API_KEY are required when LLM_PROVIDER=api");
+    throw new Error("API_BASE_URL and API_KEY (or GROQ_API_KEY) are required when LLM_PROVIDER=api");
   }
   const base = cfg.apiBase.replace(/\/$/, "");
   const url = `${base}/chat/completions`;

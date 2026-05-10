@@ -1,3 +1,8 @@
+.env
+**/.env
+Server/**
+website/**
+Documents/**
 .vscode/**
 .vscode-test/**
 src/**
@@ -9,3 +14,46 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+AI_CONTEXT.md
+.env.example
+SETUP_GUIDE.md
+WEBSITE_GUIDE.md
+extension/readme.md
+website-server.js
+scripts/**
+out/**
+
+# Slim node_modules (keep runtime JS; strip docs/tests — avoids vsce “bundle your extension” noise a bit)
+node_modules/**/*.md
+node_modules/**/LICENSE*
+node_modules/**/LICENSE.*
+node_modules/**/CHANGELOG*
+node_modules/**/CHANGELOG.*
+node_modules/**/test/**
+node_modules/**/tests/**
+node_modules/**/__tests__/**
+node_modules/**/examples/**
+node_modules/**/docs/**
+node_modules/**/*.d.ts
+
+# typescript: programmatic API uses lib/typescript.js — omit CLI + non-English diagnostic JSON
+node_modules/typescript/bin/**
+node_modules/typescript/lib/cs/**
+node_modules/typescript/lib/de/**
+node_modules/typescript/lib/es/**
+node_modules/typescript/lib/fr/**
+node_modules/typescript/lib/it/**
+node_modules/typescript/lib/ja/**
+node_modules/typescript/lib/ko/**
+node_modules/typescript/lib/pl/**
+node_modules/typescript/lib/pt-br/**
+node_modules/typescript/lib/ru/**
+node_modules/typescript/lib/tr/**
+node_modules/typescript/lib/zh-cn/**
+node_modules/typescript/lib/zh-tw/**
+
+# Extension entry is dist/extension.cjs (esbuild). Axios/xlsx are bundled there at publish time.
+# Runtime-only dependency: typescript (Code Insights). Do not ignore node_modules/** entirely.
+
+# dist/ is gitignored locally but must still be packaged
+!dist/extension.cjs

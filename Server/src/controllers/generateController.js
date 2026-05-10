@@ -43,6 +43,44 @@ const FALLBACK_GENERATE = Object.freeze({
   meta: { fallback: true, message: "AI could not produce valid output. Please try again." },
 });
 
+/**
+ * mapPromptToFeatures() returns `{ decision, features, ... }` but this controller expects
+ * `matchType`, `matchedFeatures`, `relatedFeatures`, `confidence` (legacy shape).
+ */
+function adaptFeatureMappingResult(engineResult) {
+  const features = Array.isArray(engineResult?.features) ? engineResult.features : [];
+  const matchedFeatures = features.map((f) => f.name).filter(Boolean);
+
+  const relatedFeatures = [];
+  const seenRelated = new Set();
+  for (const f of features) {
+    for (const rel of f.relatedFeatures || []) {
+      const name = typeof rel === "string" ? rel : rel?.name;
+      if (name && !seenRelated.has(name)) {
+        seenRelated.add(name);
+        relatedFeatures.push(name);
+      }
+    }
+  }
+
+  let matchType = engineResult?.decision ?? "none";
+  if (matchType === "strong") {
+    matchType = "allowed";
+  }
+
+  return {
+    decision: engineResult?.decision ?? "none",
+    features,
+    warnings: engineResult?.warnings ?? [],
+    suggestions: engineResult?.suggestions ?? [],
+    matchType,
+    matchedFeatures,
+    relatedFeatures,
+    confidence: features[0]?.confidence ?? 0,
+    closestFlows: engineResult?.closestFlows ?? [],
+  };
+}
+
 // ── Controller ─────────────────────────────────────────────────────────────────
 
 /**
@@ -114,6 +152,10 @@ export async function generate(req, res) {
       const relatedFeatureNames = matchResult.features.flatMap(f => f.relatedFeatures.map(r => r.name));
       allowedToFocus = [...new Set([...allowedToFocus, ...relatedFeatureNames])];
     }
+    const hasCatalog = allowedFeatures.length > 0;
+    if (userPrompt.trim().length > 0 && !hasCatalog) {
+      decision = "allowed";
+    }
 
     let coverageMap = {};
     if (userId && matchedFeatureNames.length > 0) {
@@ -135,13 +177,14 @@ export async function generate(req, res) {
       decision: decision === "none" ? "fallback" : decision
     });
 
-    // ❌ REMOVED HARD BLOCKING, replaced with Fallback
-    if (decision === "none" && userPrompt.trim().length > 0) {
+    // When we *do* have a catalog but nothing matched the prompt, return structured fallback instead of bogus empty testCases.
+    if (decision === "none" && userPrompt.trim().length > 0 && hasCatalog) {
       return res.json({
         warning: "Feature not found",
         suggestions: matchResult.suggestions || ["product", "collection"],
         action: "fallback",
-        features: []
+        features: [],
+        testCases: [],
       });
     }
 
@@ -243,7 +286,7 @@ export async function generate(req, res) {
         const featureObj = extractedFeatures.find(f => f.normalizedName === cov.feature);
         const matchFeat = matchResult.features.find(f => f.name === cov.feature);
         returnedFeatures.push({
-          name: cov.feature,
+          name: featureName,
           files: featureObj ? featureObj.files : [],
           relatedFeatures: matchFeat ? matchFeat.relatedFeatures.map(r => r.name) : [],
           coverage: cov.estimatedCoverage,
@@ -251,10 +294,6 @@ export async function generate(req, res) {
           missingTestAreas: cov.missingAreas
         });
       }
-
-      // Kept for backward compatibility if needed:
-      const oldFeatures = contextService.extractTestFeatures(testCases);
-      await projectService.upsertFeatures(userId, projectId, oldFeatures);
     }
 
     // ── Step 9: Respond ───────────────────────────────────────────────────────

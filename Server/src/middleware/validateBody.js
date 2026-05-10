@@ -66,6 +66,53 @@ export function validateProjectMap(req, res, next) {
   next();
 }
 
+/**
+ * POST /generate-test-code — body: { framework?: string, generateResponsePayload: object }.
+ * generateResponsePayload should mirror POST /generate JSON (at minimum { testCases: [...] }).
+ */
+export function validateGenerateTestCode(req, res, next) {
+  const b = req.body;
+  if (!b || typeof b !== "object") {
+    return res.status(400).json({
+      source: "backend",
+      type: "ValidationError",
+      message: "Request body must be a JSON object.",
+    });
+  }
+
+  const framework = b.framework != null ? String(b.framework).trim() : "";
+
+  const payload = b.generateResponsePayload;
+  if (payload == null || typeof payload !== "object" || Array.isArray(payload)) {
+    return res.status(400).json({
+      source: "backend",
+      type: "ValidationError",
+      message:
+        "Field 'generateResponsePayload' must be a JSON object (typically the full body returned from POST /generate).",
+    });
+  }
+
+  const tc = payload.testCases;
+  if (!Array.isArray(tc) || tc.length === 0) {
+    return res.status(400).json({
+      source: "backend",
+      type: "ValidationError",
+      message: "generateResponsePayload.testCases must be a non-empty array.",
+    });
+  }
+
+  if (tc.length > 100) {
+    return res.status(400).json({
+      source: "backend",
+      type: "ValidationError",
+      message: "Too many test cases (max 100 per request).",
+    });
+  }
+
+  req.generateTestCodeBody = { framework, generateResponsePayload: payload };
+  next();
+}
+
 export function validateAnalyzeFailure(req, res, next) {
   const b = req.body;
   if (!b || typeof b !== "object") {

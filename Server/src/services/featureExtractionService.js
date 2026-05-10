@@ -40,9 +40,10 @@ export function extractFeatures(projectMap, projectId) {
       const parts = filePath.split(/[\/\\\\]+/);
       
       for (let p of parts) {
-        // remove extensions
+        // remove extensions (e.g. Foo.tsx → Foo)
         p = p.replace(/\.[a-zA-Z0-9]+$/, "");
-        if (!p || NOISE_WORDS.has(p.toLowerCase())) continue;
+        // Skip dotfiles / hidden dirs (.env → "" after strip, or ".env" left from multi-dot names)
+        if (!p || p.startsWith(".") || NOISE_WORDS.has(p.toLowerCase())) continue;
 
         const normalized = normalizePhrase(p);
         if (!normalized || normalized.length < 3) continue;

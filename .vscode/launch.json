@@ -14,6 +14,8 @@
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"outFiles": [
+				"${workspaceFolder}/dist/**/*.js",
+				"${workspaceFolder}/dist/**/*.cjs",
 				"${workspaceFolder}/out/**/*.js"
 			],
 			"preLaunchTask": "${defaultBuildTask}"

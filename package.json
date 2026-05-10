@@ -1,57 +1,89 @@
 {
-  "name": "intellitest",
-  "type": "module",
-  "displayName": "intellitest",
+  "name": "debuggo",
+  "displayName": "Debuggo",
   "description": "A VS Code extension that helps junior testers generate structured test cases by applying standard software testing techniques based on project context.",
-  "version": "0.0.1",
+  "version": "0.0.7",
+  "publisher": "IntelliTest",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.110.0"
   },
   "categories": [
-    "Other"
+    "Testing"
   ],
+  "keywords": [
+    "testing",
+    "test cases",
+    "qa",
+    "quality assurance",
+    "ai",
+    "excel",
+    "test design"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mohamedelziat50/intellitest.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mohamedelziat50/intellitest/issues"
+  },
+  "homepage": "https://github.com/mohamedelziat50/intellitest#readme",
+  "overrides": {
+    "supports-color": "7.2.0"
+  },
+  "type": "module",
   "activationEvents": [
-    "onView:intellitestView"
+    "onView:debuggoView"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.cjs",
   "contributes": {
     "configuration": {
-      "title": "IntelliTest",
+      "title": "Debuggo",
       "properties": {
-        "intellitest.backendUrl": {
+        "debuggo.backendUrl": {
           "type": "string",
-          "default": "http://localhost:3000",
-          "description": "Base URL of the IntelliTest backend (no trailing slash). Must match Server/.env PORT — e.g. http://localhost:3001 when PORT=3001."
+          "default": "https://intellitest-hyvw.onrender.com",
+          "description": "Base URL of the Debuggo API (no trailing slash). Default is the hosted backend; use http://localhost:PORT when running Server locally (match Server/.env PORT)."
         }
       }
     },
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "intellitest-sidebar",
-          "title": "IntelliTest",
-          "icon": "media/intellitest.svg"
+          "id": "debuggo-sidebar",
+          "title": "Debuggo",
+          "icon": "media/BMO.svg"
         }
       ]
     },
     "views": {
-      "intellitest-sidebar": [
+      "debuggo-sidebar": [
         {
           "type": "webview",
-          "id": "intellitestView",
-          "name": "IntelliTest"
+          "id": "debuggoView",
+          "name": "Debuggo"
         }
       ]
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile:tsc && npm run bundle:prod",
+    "compile:tsc": "node scripts/ensure-out-package.mjs && node ./node_modules/typescript/lib/tsc.js -p ./",
+    "bundle": "node scripts/bundle-extension.mjs",
+    "bundle:prod": "node scripts/bundle-extension.mjs --minify",
+    "compile": "npm run compile:tsc && npm run bundle",
+    "watch:tsc": "node scripts/ensure-out-package.mjs && node ./node_modules/typescript/lib/tsc.js -watch -p ./",
+    "watch:bundle": "node scripts/bundle-extension.mjs --watch",
+    "watch": "concurrently -k \"npm:watch:tsc\" \"npm:watch:bundle\"",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test",
-    "website": "node website-server.js"
+    "website": "node website-server.js",
+    "vsce:publish-patch": "npx @vscode/vsce publish patch --no-git-tag-version",
+    "vsce:package-prod": "npm ci && npx @vscode/vsce package"
+  },
+  "dependencies": {
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -59,14 +91,12 @@
     "@types/vscode": "^1.110.0",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
-    "eslint": "^9.39.3",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1"
-  },
-  "dependencies": {
     "axios": "^1.14.0",
-    "dotenv": "^17.4.2",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.28.0",
+    "eslint": "^9.39.3",
     "express": "^4.21.2",
+    "typescript-eslint": "^8.56.1",
     "xlsx": "^0.18.5"
   }
 }

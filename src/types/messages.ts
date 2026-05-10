@@ -4,6 +4,9 @@ export type WebviewMessage =
 			prompt: string;
 	  }
 	| {
+			command: 'generateTestCode';
+	  }
+	| {
 			command: 'exportExcel';
 	  }
 	| {
@@ -11,6 +14,23 @@ export type WebviewMessage =
 	  }
 	| {
 			command: 'ready';
+	  }
+	| {
+			command: 'login';
+			email: string;
+			password: string;
+	  }
+	| {
+			command: 'signup';
+			name: string;
+			email: string;
+			password: string;
+	  }
+	| {
+			command: 'logout';
+	  }
+	| {
+			command: 'retryAuth';
 	  }
 	| {
 			command: 'refreshCodeInsights';
@@ -23,4 +43,4 @@ export type WebviewMessage =
 			command: 'saveTestScript';
 			filename: string;
 			code: string;
-	  };
+	  }

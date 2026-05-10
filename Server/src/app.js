@@ -12,7 +12,7 @@ import inteliteRoutes from "./routes/inteliteRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import { logger }     from "./utils/logger.js";
 import { rateLimiter } from "./middleware/rateLimiter.js";
-import { authMiddleware, optionalAuthMiddleware } from "./middleware/authMiddleware.js";
+import { optionalAuthMiddleware } from "./middleware/authMiddleware.js";
 
 // ── CORS ───────────────────────────────────────────────────────────────────────
 
@@ -57,7 +57,7 @@ export function createApp() {
     return rateLimiter(req, res, next);
   });
 
-  // ── Health check ─────────────────────────────────────────────────────────
+// ── Health check ─────────────────────────────────────────────────────────
   app.get("/health", (_req, res) => {
     res.json({ ok: true, service: "intellitest-backend", env: serverConfig.nodeEnv });
   });

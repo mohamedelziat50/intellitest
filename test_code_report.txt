@@ -1,0 +1,56 @@
+﻿================================================================================
+         INTELLITEST - KIRO IMPLEMENTATION REPORT
+         Feature: Generate Test Code
+         Date: May 2026
+================================================================================
+
+
+================================================================================
+SECTION 1: PROJECT OVERVIEW
+================================================================================
+
+Project Name : IntelliTest
+Type         : VS Code Extension
+Language     : TypeScript (extension) + JavaScript (backend server)
+Purpose      : Help junior QA testers generate structured test cases and
+               executable test code using AI, directly inside VS Code.
+
+--------------------------------------------------------------------------------
+1.1  What is the "Generate Test Code" Feature?
+--------------------------------------------------------------------------------
+
+"Generate Test Code" is a new feature added to the IntelliTest VS Code extension.
+It extends the existing "Generate Test Cases" workflow by adding a second AI step
+that converts the already-generated test cases into real, runnable automated test
+code using the Groq API.
+
+Before this feature existed, IntelliTest could only:
+  - Accept a user prompt
+  - Generate structured test cases (via Groq + backend server)
+  - Export those test cases to an Excel file
+
+After this feature was added, IntelliTest can also:
+  - Read the generated test cases (from memory or from the exported Excel file)
+  - Send them to Groq API with a professional QA automation prompt
+  - Receive complete, runnable test code
+  - Save the code to generated-tests/ in the workspace
+  - Open the file automatically in the VS Code editor
+  - Preview the code inside the extension panel with Copy and Save buttons
+
+--------------------------------------------------------------------------------
+1.2  High-Level Workflow
+--------------------------------------------------------------------------------
+
+Step 1: User types a prompt (e.g. "Generate login test cases")
+Step 2: Extension calls the backend server (Node.js on port 3000)
+Step 3: Backend calls Groq API -> returns structured test cases
+Step 4: Test cases are displayed in the panel table
+Step 5: User clicks "Export to Excel" -> .xlsx file saved to workspace root
+Step 6: User clicks "Generate Test Code" (now enabled)
+Step 7: Extension reads test cases from memory (or Excel as fallback)
+Step 8: Extension calls Groq API directly with a code-generation prompt
+Step 9: Groq returns executable test code
+Step 10: Code is saved to generated-tests/generatedTestCode.spec.js
+Step 11: File opens automatically in VS Code editor
+Step 12: Code preview appears in the extension panel
+

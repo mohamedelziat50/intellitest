@@ -36,8 +36,14 @@ function validateLoginInput({ email, password }) {
 
 export async function signup(req, res) {
   const { name, email, password } = req.body || {};
+  logger.info("auth_signup_received", { route: "/auth/signup", emailProvided: Boolean(email) });
+
   const validationError = validateSignupInput({ name, email, password });
   if (validationError) {
+    logger.warn("auth_signup_validation_failed", {
+      reason: validationError,
+      emailAttempt: email != null ? normalizeEmail(String(email)) : null,
+    });
     return res.status(400).json({
       source: "auth",
       type: "ValidationError",
@@ -48,8 +54,11 @@ export async function signup(req, res) {
   const normalizedEmail = normalizeEmail(email);
 
   try {
+    logger.info("auth_signup_attempt", { email: normalizedEmail });
+
     const existing = await User.findOne({ email: normalizedEmail }).lean();
     if (existing) {
+      logger.warn("auth_signup_conflict_email_in_use", { email: normalizedEmail });
       return res.status(409).json({
         source: "auth",
         type: "Conflict",
@@ -65,19 +74,26 @@ export async function signup(req, res) {
     });
 
     const token = signToken(String(user._id));
+    logger.info("auth_signup_success", {
+      userId: String(user._id),
+      email: normalizedEmail,
+      name: String(user.name),
+      jwtIssued: true,
+    });
     return res.status(201).json({
       token,
       user: toUserResponse(user),
     });
   } catch (err) {
     if (err?.code === 11000) {
+      logger.warn("auth_signup_conflict_duplicate_key", { email: normalizedEmail });
       return res.status(409).json({
         source: "auth",
         type: "Conflict",
         message: "Email is already in use.",
       });
     }
-    logger.error("signup_failed", { message: err.message });
+    logger.error("auth_signup_failed", { email: normalizedEmail, message: err.message });
     return res.status(500).json({
       source: "auth",
       type: "InternalError",
@@ -88,8 +104,14 @@ export async function signup(req, res) {
 
 export async function login(req, res) {
   const { email, password } = req.body || {};
+  logger.info("auth_login_received", { route: "/auth/login", emailProvided: Boolean(email) });
+
   const validationError = validateLoginInput({ email, password });
   if (validationError) {
+    logger.warn("auth_login_validation_failed", {
+      reason: validationError,
+      emailAttempt: email != null ? normalizeEmail(String(email)) : null,
+    });
     return res.status(400).json({
       source: "auth",
       type: "ValidationError",
@@ -100,8 +122,14 @@ export async function login(req, res) {
   const normalizedEmail = normalizeEmail(email);
 
   try {
+    logger.info("auth_login_attempt", { email: normalizedEmail });
+
     const user = await User.findOne({ email: normalizedEmail }).select("+passwordHash");
     if (!user) {
+      logger.warn("auth_login_rejected", {
+        email: normalizedEmail,
+        reason: "unknown_user",
+      });
       return res.status(401).json({
         source: "auth",
         type: "Unauthorized",
@@ -111,6 +139,11 @@ export async function login(req, res) {
 
     const ok = await bcrypt.compare(String(password), user.passwordHash);
     if (!ok) {
+      logger.warn("auth_login_rejected", {
+        email: normalizedEmail,
+        userId: String(user._id),
+        reason: "bad_password",
+      });
       return res.status(401).json({
         source: "auth",
         type: "Unauthorized",
@@ -119,12 +152,17 @@ export async function login(req, res) {
     }
 
     const token = signToken(String(user._id));
+    logger.info("auth_login_success", {
+      userId: String(user._id),
+      email: normalizedEmail,
+      jwtIssued: true,
+    });
     return res.json({
       token,
       user: toUserResponse(user),
     });
   } catch (err) {
-    logger.error("login_failed", { message: err.message });
+    logger.error("auth_login_error", { email: normalizedEmail, message: err.message });
     return res.status(500).json({
       source: "auth",
       type: "InternalError",
@@ -136,6 +174,7 @@ export async function login(req, res) {
 export async function getMe(req, res) {
   const userId = req.user?.id || req.userId;
   if (!userId) {
+    logger.warn("auth_me_rejected", { reason: "missing_user_id" });
     return res.status(401).json({
       source: "auth",
       type: "Unauthorized",
@@ -143,18 +182,25 @@ export async function getMe(req, res) {
     });
   }
 
+  logger.info("auth_me_request", { userId: String(userId) });
+
   try {
     const user = await User.findById(userId).lean();
     if (!user) {
+      logger.warn("auth_me_not_found", { userId: String(userId) });
       return res.status(404).json({
         source: "auth",
         type: "NotFound",
         message: "User not found.",
       });
     }
+    logger.info("auth_me_success", {
+      userId: String(user._id),
+      email: user.email,
+    });
     return res.json({ user: toUserResponse(user) });
   } catch (err) {
-    logger.error("get_me_failed", { message: err.message });
+    logger.error("auth_me_error", { userId: String(userId), message: err.message });
     return res.status(500).json({
       source: "auth",
       type: "InternalError",

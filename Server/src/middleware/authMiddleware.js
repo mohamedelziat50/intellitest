@@ -1,8 +1,13 @@
 import { verifyToken } from "../utils/jwt.js";
+import { logger } from "../utils/logger.js";
 
 export function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
   if (!header || typeof header !== "string") {
+    logger.warn("auth_middleware_rejected", {
+      route: `${req.method} ${req.originalUrl}`,
+      reason: "missing_header",
+    });
     return res.status(401).json({
       source: "auth",
       type: "Unauthorized",
@@ -12,6 +17,10 @@ export function authMiddleware(req, res, next) {
 
   const [scheme, token] = header.split(" ");
   if (scheme !== "Bearer" || !token) {
+    logger.warn("auth_middleware_rejected", {
+      route: `${req.method} ${req.originalUrl}`,
+      reason: "bad_scheme",
+    });
     return res.status(401).json({
       source: "auth",
       type: "Unauthorized",
@@ -22,6 +31,10 @@ export function authMiddleware(req, res, next) {
   try {
     const payload = verifyToken(token);
     if (!payload || !payload.userId) {
+      logger.warn("auth_middleware_rejected", {
+        route: `${req.method} ${req.originalUrl}`,
+        reason: "payload_missing_user_id",
+      });
       return res.status(401).json({
         source: "auth",
         type: "Unauthorized",
@@ -33,6 +46,11 @@ export function authMiddleware(req, res, next) {
     req.userId = String(payload.userId);
     return next();
   } catch (err) {
+    logger.warn("auth_middleware_rejected", {
+      route: `${req.method} ${req.originalUrl}`,
+      reason: "verify_threw_or_expired",
+      message: err?.message,
+    });
     return res.status(401).json({
       source: "auth",
       type: "Unauthorized",

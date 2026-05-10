@@ -6,6 +6,8 @@
 import mongoose from "mongoose";
 
 const FeatureSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+
   name: { type: String, required: true },
   normalizedName: { type: String, required: true },
 
@@ -25,8 +27,8 @@ const FeatureSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Indexing for deduplication and performance
-FeatureSchema.index({ normalizedName: 1, projectId: 1 }, { unique: true });
+// One row per tenant + workspace + canonical feature id
+FeatureSchema.index({ userId: 1, normalizedName: 1, projectId: 1 }, { unique: true });
 
 export const Feature = mongoose.model("Feature", FeatureSchema);
 export default Feature;

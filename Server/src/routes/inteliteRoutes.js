@@ -2,11 +2,16 @@ import { Router } from "express";
 
 // ── controllers ────────────────────────────────────────────────────────────────
 import * as inteliteController from "../controllers/inteliteController.js";
+import * as testCodeController from "../controllers/testCodeController.js";
 import { generate, analyzeIntent }     from "../controllers/generateController.js";
 import { initProject, syncProject }  from "../controllers/projectController.js";
 
 // ── middleware ─────────────────────────────────────────────────────────────────
-import { validateProjectMap, validateAnalyzeFailure } from "../middleware/validateBody.js";
+import {
+  validateProjectMap,
+  validateAnalyzeFailure,
+  validateGenerateTestCode,
+} from "../middleware/validateBody.js";
 import { validateGenerate } from "../middleware/validateGenerate.js";
 import { promptFilter }     from "../middleware/promptFilter.js";
 
@@ -33,6 +38,12 @@ router.post(
   "/analyze-intent",
   analyzeIntent
 );
+
+/**
+ * POST /generate-test-code
+ * Builds automation code from the prior POST /generate JSON (JWT not required).
+ */
+router.post("/generate-test-code", validateGenerateTestCode, testCodeController.generateTestCode);
 
 /**
  * GET /project/:projectId/init

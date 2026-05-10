@@ -121,3 +121,34 @@ export function analyzeFailurePrompt(payload) {
     TEST_NAME: payload.test ?? "",
   });
 }
+
+/**
+ * Executable test code from structured cases. Embeds the full prior-generation JSON
+ * (POST /generate response body) so the model stays aligned with the same scenarios.
+ *
+ * @param {string} frameworkHint
+ * @param {Record<string, unknown>} generateResponsePayload
+ * @returns {string}
+ */
+export function generateExecutableTestCodePrompt(frameworkHint, generateResponsePayload) {
+  const jsonBlock = JSON.stringify(generateResponsePayload ?? {}, null, 2);
+  const fw =
+    frameworkHint && String(frameworkHint).trim() && !/not (detected|generated|specified)/i.test(frameworkHint)
+      ? String(frameworkHint).trim()
+      : "Infer the best matching test runner from the JSON and project hints.";
+
+  return `You are a senior QA automation engineer.
+
+The JSON below is the exact structured output from the prior manual test-case generation step (LLM via POST /generate), including its "testCases" array and any metadata fields (meta, features, insights, etc.). Treat this JSON as the single source of truth for what to automate.
+
+PRIOR_GENERATION_JSON:
+${jsonBlock}
+
+Target testing framework hint: ${fw}
+
+Task: Generate executable automated test code that implements these scenarios.
+Rules:
+- Use clear test names, setup, actions, expected results, and assertions.
+- Generate clean, complete, runnable code.
+- Return only the raw source code — no markdown, no code fences, no explanation before or after the code.`;
+}
